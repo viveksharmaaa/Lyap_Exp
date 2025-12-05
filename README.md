@@ -47,8 +47,6 @@ pip install -r requirements.txt
 ```
 
 
-
-
 ## Execution
 
 To generate data to reproduce **Figure 1** in the manuscript, please run to first generate the data by running
@@ -67,6 +65,11 @@ Then run:
 python3 plot_results.py
 
 ```
+
+## Test loss vs Max Lyapunov Exponent for different paramter initializations
+
+![Test loss vs Max Lyapunov Exponent for different learning rates](Minimum_Viable_product_two_panel_weight.png)
+
 Likewise, to reproduce **Figure 2** in the manuscript, please run to first generate the data by running
 
 ```bash
@@ -83,9 +86,18 @@ Then run:
 python3 plot_results.py
 ```
 
+## Test loss vs Max Lyapunov Exponent for different learning rates
+
+![Test loss vs Max Lyapunov Exponent for different learning rates](Minimum_Viable_product_two_panel_lr.png)
+
+
+# Test loss, Max Lyapunov Exponent vs for different learning rates
+
+![Test loss, Max Lyapunov Exponent and Maximum Hessian Eigenvalue for different learning rates](three_panel.png)
+
+
 ## Pre-trained Model and Data
 
 Pre-generated files `results_random_weight.npz` and `results_random_lr.npz` are included to avoid the need for long training runs.
 
 You can directly execute `plot_results.py` after updating **line 20** to point to the correct path of `results_random_weight.npz` on your system.
-
