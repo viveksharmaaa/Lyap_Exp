@@ -106,7 +106,7 @@ Spearman ρ: 0.8588178817881787 p-value: 3.173921991080019e-30
 ```
 
 
-# Test loss, Max Lyapunov Exponent vs for different learning rates
+# Test loss, Max Lyapunov Exponent,Max Hessian Eigenvalue (full batch) variation  for different learning rates
 
 ![Test loss, Max Lyapunov Exponent and Maximum Hessian Eigenvalue for different learning rates](three_panel.png)
 
