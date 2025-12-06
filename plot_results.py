@@ -17,7 +17,7 @@ plt.rcParams.update({
 
 
 # Change the data_path to point to the .npz file on your computer.
-data_path = "results_random_weight.npz"  # "results_random_lr_20" #
+data_path = "results_random_lr.npz"  # "results_random_lr_20" #
 data = np.load(data_path) #lr with random weights
 
 err_bars ='sem' #or 'std'
@@ -33,7 +33,7 @@ seeds     = data["seed"]              # seed
 sigma_max = data["sigma_max"] if "sigma_max" in data.files else None       # sigma_max
 print("Loaded:", len(lams), "entries")
 
-if "_lr_" in data_path:
+if "_lr" in data_path:
     tag = "lr"
 elif "weight" in data_path:
     tag = "weight"
@@ -108,7 +108,7 @@ sns.kdeplot(
 
 unique_lrs = np.unique(lrs)
 
-if "_lr_" in data_path:
+if "_lr" in data_path:
     palette = sns.color_palette("colorblind", n_colors=len(unique_lrs))
     sns.scatterplot(
         x=scale * lams,
@@ -182,11 +182,11 @@ sns.heatmap(
 ax.set_title("(b) Correlation Matrix")
 ax.tick_params(axis='both', which='major', labelsize=16)
 plt.tight_layout()
-outfile = f"Minimum_Viable_product_two_panel_{tag}.png"
+outfile = f"Minimum_Viable_product_{tag}.png"
 plt.savefig(outfile, dpi=300)
 plt.show()
 
-if "_lr_" in data_path and err_bars=="std":
+if "_lr" in data_path and err_bars=="std":
 
     #Plots for (a) test_loss vs learning rate  (b) lambda_max vs learning rate and (c) sigma_max vs learning rate
     # Unique LR values
@@ -242,7 +242,7 @@ if "_lr_" in data_path and err_bars=="std":
     plt.savefig(outfile, dpi=300)
     plt.show()
 
-elif "_lr_" in data_path and err_bars=="sem":
+elif "_lr" in data_path and err_bars=="sem":
     # Unique LR values
     unique_lrs = np.unique(lrs)
 

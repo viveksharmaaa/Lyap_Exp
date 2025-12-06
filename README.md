@@ -27,7 +27,7 @@ offering a deeper understanding of generalization behavior.
 - `plot_results.py` — Plots the results and reproduces the figures used in the manuscript.
 
 ## Installation
-Install the required Python(Python version 3.10 recommended) packages (modify the PyTorch version in `requirements.txt` to match your device) as follows:
+Install the required Python packages as follows
 
 ## Environment Setup (Recommended: Conda)
 
@@ -40,35 +40,46 @@ Activate the environment:
 ```bash
 conda activate lyap_exp
 ```
-Install the required dependencies:
+
+Before installing the required dependencies, please modify the PyTorch version in `requirements.txt` to match your device  and then install 
+the nstall the required dependencies as follows:
 
 ```bash
 pip install -r requirements.txt
 ```
 
 
-## Execution
+## Training 
 
-To generate data to reproduce **Figure 1** in the manuscript, please run to first generate the data by running
+To generate data to reproduce **Figure 1** in the manuscript, we first train the model to convergence  for 100 random initializations 
+and then compute the Lyapunov exponents. You can train the model by executing the script file as follows:
 
 ```bash
 python3 Study_A.py
 ```
 
-This step produces a `results_random_weight.npz` file that can be analyzed and plotted.
+This script stores all the data in file  `results_random_weight.npz` that is analyzed and plotted. using `plot_results.py`. Before running the plotting script to reproduce **Figure 1**, update 
+the variable  `data_path` in **line 20** in `plot_results.py` so it points to the correct location of `results_random_weight.npz` on your system.
 
-Before running the plotting script, update **line 20** in `plot_results.py` so it points to the correct location of `results_random_weight.npz` on your system.
-
-Then run:
+Then run the following script:
 
 ```bash
 python3 plot_results.py
 
 ```
 
-## Test loss vs Max Lyapunov Exponent for different parameter initializations
+Likewise to reproduce **Figure 2**, run the following script 
 
-![Test loss vs Max Lyapunov Exponent for different intializations](Minimum_Viable_product_two_panel_weight.png)
+```bash
+python3 Study_B.py
+python3 plot_results.py
+```
+
+This script `Study_B.py`  stores all the data in file  `results_random_lr.npz` that is analyzed and plotted using `plot_results.py`
+
+##  Study A: Test loss vs Max Lyapunov Exponent for different parameter initializations
+
+![Test loss vs Max Lyapunov Exponent for different intializations](Minimum_Viable_product_weight.png)
 
 Correlation Results between `test_loss` and  `λmax` for different parameter initializations
 ```bash
@@ -93,26 +104,28 @@ Then run:
 python3 plot_results.py
 ```
 
-## Test loss vs Max Lyapunov Exponent for different learning rates
+## Study B : Test loss vs Max Lyapunov Exponent for different learning rates
 
-![Test loss vs Max Lyapunov Exponent for different learning rates](Minimum_Viable_product_two_panel_lr.png)
+![Test loss vs Max Lyapunov Exponent for different learning rates](Minimum_Viable_product_lr.png)
 
 
 Correlation Results between `test_loss` and  `λmax` for different learning rates
 ```bash
-Pearson r: 0.6308704941000116 p-value: 1.9918209194174005e-12
-Spearman ρ: 0.8588178817881787 p-value: 3.173921991080019e-30
+Pearson r: 0.6051292268836799 p-value: 2.3017803334752343e-21
+Spearman ρ: 0.848574214355359 p-value: 1.2027215178625328e-56
 ✔️ Statistically significant (p < 0.05)
 ```
 
 
-# Test loss, Max Lyapunov Exponent,Max Hessian Eigenvalue (full batch) variation  for different learning rates
+# Study B : Test loss, Max Lyapunov Exponent,Max Hessian Eigenvalue (full batch) variation  for different learning rates
 
 ![Test loss, Max Lyapunov Exponent and Maximum Hessian Eigenvalue for different learning rates](three_panel_lr_sem.png)
 
+Across all three panels, error bars denote $\pm 1$ standard error of the mean (SEM) over 40 independent runs per learning rate.
 
 ## Pre-trained Model and Data
 
 Pre-generated files `results_random_weight.npz` and `results_random_lr.npz` are included to avoid the need for long training runs.
 
-You can directly execute `plot_results.py` after updating **line 20** to point to the correct path of `results_random_weight.npz` on your system.
+You can directly execute `plot_results.py` after updating **line 20** to point to the correct path of `results_random_weight.npz` on your system to reproduce **Figure 1**
+and likewise **Figure 2**.
