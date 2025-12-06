@@ -14,10 +14,13 @@ plt.rcParams.update({
     "figure.titlesize": 20,
 })
 
+
+
 # Change the data_path to point to the .npz file on your computer.
-data_path = "results_random_lr_20seed.npz"  # "/home/sharma/Projects/DDAT/Lyap_Exp/results_random_weight_50seed.npz" #
+data_path = "results_random_weight.npz"  # "results_random_lr_20" #
 data = np.load(data_path) #lr with random weights
 
+err_bars ='sem' #or 'std'
 # Extract arrays
 lams      = data["lambda_max"]        # HVP λ_max
 lams_dns  = data["lambda_max_dns"]    # DNS λ_max
@@ -183,7 +186,7 @@ outfile = f"Minimum_Viable_product_two_panel_{tag}.png"
 plt.savefig(outfile, dpi=300)
 plt.show()
 
-if "_lr_" in data_path:
+if "_lr_" in data_path and err_bars=="std":
 
     #Plots for (a) test_loss vs learning rate  (b) lambda_max vs learning rate and (c) sigma_max vs learning rate
     # Unique LR values
@@ -235,7 +238,72 @@ if "_lr_" in data_path:
     ax[2].grid(alpha=0.3)
     plt.tight_layout()
     plt.legend()
-    outfile = f"three_panel_{tag}.png"
+    outfile = f"three_panel_{tag}_{err_bars}.png"
+    plt.savefig(outfile, dpi=300)
+    plt.show()
+
+elif "_lr_" in data_path and err_bars=="sem":
+    # Unique LR values
+    unique_lrs = np.unique(lrs)
+
+    # SEM calculation for each learning rate
+    sem_test = []
+    sem_lam = []
+    sem_sigma = []
+
+    mean_test = []
+    mean_lam = []
+    mean_sigma = []
+
+    for lr in unique_lrs:
+        mask = (lrs == lr)
+
+        mean_test.append(errs[mask].mean())
+        sem_test.append(errs[mask].std(ddof=1) / np.sqrt(mask.sum()))
+
+        mean_lam.append(lams[mask].mean())
+        sem_lam.append(lams[mask].std(ddof=1) / np.sqrt(mask.sum()))
+
+        mean_sigma.append(sigma_max[mask].mean())
+        sem_sigma.append(sigma_max[mask].std(ddof=1) / np.sqrt(mask.sum()))
+
+    # ---------------- FIGURE ----------------
+    fig, ax = plt.subplots(1, 3, figsize=(18, 5))
+
+    # ========== (a) Test Loss ==========
+    ax[0].errorbar(unique_lrs, mean_test, yerr=sem_test,
+                   marker='o', color='red', capsize=4, linewidth=2)
+    ax[0].set_xscale('log')
+    ax[0].set_title("(a) Test Loss", fontsize=14)
+    ax[0].set_xlabel(r"Learning rate ($\eta$)")
+    ax[0].set_ylabel("test_loss")
+    ax[0].grid(alpha=0.3)
+
+    # ========== (b) Lambda_max ==========
+    ax[1].errorbar(unique_lrs, mean_lam, yerr=sem_lam,
+                   marker='o', color='blue', capsize=4, linewidth=2)
+    ax[1].set_xscale('log')
+    ax[1].set_title(r"(b) Largest Lyapunov Exponent ($\lambda_{\max}$)", fontsize=14)
+    ax[1].set_xlabel(r"Learning rate ($\eta$)")
+    ax[1].set_ylabel(r"$\lambda_{\max}$")
+    ax[1].grid(alpha=0.3)
+
+    # ========== (c) Sigma_max ==========
+    ax[2].errorbar(unique_lrs, mean_sigma, yerr=sem_sigma,
+                   marker='o', color='green', capsize=4, linewidth=2)
+    ax[2].set_xscale('log')
+    ax[2].set_yscale('log')
+
+    ax[2].plot(unique_lrs, 2/unique_lrs, 'k--', label=r"$2/\eta$")
+
+    ax[2].set_title(r"(c) Maximum Hessian eigenvalue ($\sigma_{\max}$)", fontsize=14)
+    ax[2].set_xlabel(r"Learning rate ($\eta$)")
+    ax[2].set_ylabel(r"$\sigma_{\max}$")
+    ax[2].grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.legend()
+    outfile = f"three_panel_{tag}_{err_bars}.png"
     plt.savefig(outfile, dpi=300)
     plt.show()
 

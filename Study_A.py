@@ -635,10 +635,10 @@ if __name__ == "__main__":
     N = 506       # size of the Boston housing dataset
     data_seed = 0 # fix seed for generating data
     bs = 32         #batch size
-    save_results  = True  #Save results to csv
+    save_results  = True  #Save results to npz file
 
     #WIDTHS = [20] #20, 50, 100, 200 # width of the hidden layer
-    width = 100 # width of the hidden layer 20 is best
+    width = 50 # width of the hidden layer 20 is best
     LRS    = [1e-3] #[1e-5,1e-4,1e-3,1e-2,5e-2] #5e-5, 1e-4, 3e-4 # fixed learning rates
     RUNS_PER_CONFIG = 100 # number of runs
 
@@ -685,6 +685,6 @@ if __name__ == "__main__":
         results_np = {key: np.array([d[key] for d in results])
                       for key in results[0].keys()}
         # Save as NPZ
-        np.savez("results_random_weight_100.npz", **results_np)
+        np.savez("results_random_weight.npz", **results_np)
         print("Saved results to results_random_weight.npz")
 

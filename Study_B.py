@@ -694,7 +694,7 @@ if __name__ == "__main__":
     bs = 32         #batch size
     save_results  = True  #Save results to csv
 
-    width = 100 # width =50
+    width = 50# width =50
     LRS    = [1e-5,1e-4,1e-3,1e-2,1e-1]
     RUNS_PER_CONFIG = 40 # number of runs
 
@@ -741,6 +741,6 @@ if __name__ == "__main__":
         results_np = {key: np.array([d[key] for d in results])
                       for key in results[0].keys()}
         # Save as NPZ
-        np.savez("results_random_lr_40.npz", **results_np)
+        np.savez("results_random_lr.npz", **results_np)
         print("Saved results to results_random_lr.npz")
 

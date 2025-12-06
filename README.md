@@ -68,12 +68,12 @@ python3 plot_results.py
 
 ## Test loss vs Max Lyapunov Exponent for different parameter initializations
 
-![Test loss vs Max Lyapunov Exponent for different learning rates](Minimum_Viable_product_two_panel_weight.png)
+![Test loss vs Max Lyapunov Exponent for different intializations](Minimum_Viable_product_two_panel_weight.png)
 
 Correlation Results between `test_loss` and  `λmax` for different parameter initializations
 ```bash
-Pearson r: 0.34530218186201544 p-value: 0.014050874628482058 
-Spearman ρ: 0.16859543817527012 p-value: 0.24184094814296866 
+Pearson r: 0.19903007516812207 p-value: 0.04712374877947491
+Spearman ρ: 0.08186018601860186 p-value: 0.4181297924323807
 ✔️ Statistically significant (p < 0.05)
 ```
 
@@ -108,7 +108,7 @@ Spearman ρ: 0.8588178817881787 p-value: 3.173921991080019e-30
 
 # Test loss, Max Lyapunov Exponent,Max Hessian Eigenvalue (full batch) variation  for different learning rates
 
-![Test loss, Max Lyapunov Exponent and Maximum Hessian Eigenvalue for different learning rates](three_panel.png)
+![Test loss, Max Lyapunov Exponent and Maximum Hessian Eigenvalue for different learning rates](three_panel_lr_sem.png)
 
 
 ## Pre-trained Model and Data
