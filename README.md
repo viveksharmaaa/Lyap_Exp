@@ -66,9 +66,16 @@ python3 plot_results.py
 
 ```
 
-## Test loss vs Max Lyapunov Exponent for different paramter initializations
+## Test loss vs Max Lyapunov Exponent for different parameter initializations
 
 ![Test loss vs Max Lyapunov Exponent for different learning rates](Minimum_Viable_product_two_panel_weight.png)
+
+Correlation Results between `test_loss` and  `λmax` for different parameter initializations
+```bash
+Pearson r: 0.34530218186201544 p-value: 0.014050874628482058 
+Spearman ρ: 0.16859543817527012 p-value: 0.24184094814296866 
+✔️ Statistically significant (p < 0.05)
+```
 
 Likewise, to reproduce **Figure 2** in the manuscript, please run to first generate the data by running
 
@@ -89,6 +96,14 @@ python3 plot_results.py
 ## Test loss vs Max Lyapunov Exponent for different learning rates
 
 ![Test loss vs Max Lyapunov Exponent for different learning rates](Minimum_Viable_product_two_panel_lr.png)
+
+
+Correlation Results between `test_loss` and  `λmax` for different learning rates
+```bash
+Pearson r: 0.6308704941000116 p-value: 1.9918209194174005e-12
+Spearman ρ: 0.8588178817881787 p-value: 3.173921991080019e-30
+✔️ Statistically significant (p < 0.05)
+```
 
 
 # Test loss, Max Lyapunov Exponent vs for different learning rates

@@ -9,9 +9,17 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import pandas as pd
+import os
+
+os.makedirs("figures/Study_A", exist_ok=True)
+
+# Create folders if they don't exist
+os.makedirs("figures/Study_A/LE", exist_ok=True)
+os.makedirs("figures/Study_A/trainloss", exist_ok=True)
+
 
 # ============================================================
-# 0. Device / dtype
+#  Device / dtype
 # ============================================================
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -19,7 +27,7 @@ dtype = torch.float32   # change to float64 if you want more accuracy
 
 
 # ============================================================
-# 0.1 Helper function for computing \lambda_max through DNS
+#  Helper function for computing \lambda_max through DNS
 # ============================================================
 # ============================================================
 
@@ -61,7 +69,7 @@ def sgd_step_in_place(model, xb, yb, lr, loss_fn):
     return float(loss.item())
 
 # ============================================================
-# 0.2 Flatten / unflatten helpers
+#  Flatten / unflatten helpers
 # ============================================================
 def flatten_params(tensors):
     """Flatten list/tuple of tensors to a 1D vector."""
@@ -94,7 +102,7 @@ def get_param_list(model):
     return [p for p in model.parameters()]
 
 # ============================================================
-# 1. Dataset: fixed nonlinear teacher (same as before)
+# Dataset: Boston Housing Dataset
 # ============================================================
 
 def generate_data(seed=0,Nsub=None):
@@ -245,10 +253,35 @@ def hvp_finite_difference(model, Xb, Yb, v_flat, eps=1e-3):
 
     return (g_plus - g_minus) / (2.0 * eps)
 
+def sanity_check_hvp(model, Xb, Yb, eps=1e-4):
+    # random vector v
+    params = list(model.parameters())
+    D = sum(p.numel() for p in params)
+
+    v = torch.randn(D, device=device, dtype=dtype)
+    v /= v.norm()
+
+    Hv_hvp = hvp_simple(model, Xb, Yb, v)
+
+    Hv_fd = hvp_finite_difference(
+        model, Xb, Yb, v, eps=eps
+    )
+
+    rel_err = torch.norm(Hv_hvp - Hv_fd) / (torch.norm(Hv_fd) + 1e-12)
+
+    if rel_err > 1e-1:
+        print("========== HVP SANITY CHECK ==========")
+        print("||Hv_pearl|| =", Hv_hvp.norm().item())
+        print("||Hv_fd||    =", Hv_fd.norm().item())
+        print("High FD error:", rel_err.item())
+        print("=======================================\n")
+
+    return rel_err.item()
+
 
 
 # ============================================================
-# 2. 3 layered Multi Layered Perceptron with tanh() activation function
+#  3 layered Multi Layered Perceptron with tanh() activation function
 # ============================================================
 
 class MLP(nn.Module):
@@ -266,7 +299,7 @@ class MLP(nn.Module):
 
 
 # ============================================================
-# 4. Training to convergence function  (SGD)
+#  Training to convergence function  (SGD)
 # ============================================================
 
 def train_to_convergence(model,
@@ -324,7 +357,8 @@ def train_to_convergence(model,
         plt.xlabel("Epochs")
         plt.ylabel("train_loss")
         plt.title("Training Loss convergence")
-        fname_train= f"train_seed_{seed}_lr_{lr}.png"
+        fname_train = f"figures/Study_A/trainloss/train_seed_{seed}_lr_{lr}.png"
+        plt.tight_layout()
         plt.savefig(fname_train, dpi=200)
         plt.close()
 
@@ -336,34 +370,8 @@ def train_to_convergence(model,
     return train_losses[-1],test_loss
 
 
-def sanity_check_hvp(model, Xb, Yb, eps=1e-4):
-    # random vector v
-    params = list(model.parameters())
-    D = sum(p.numel() for p in params)
-
-    v = torch.randn(D, device=device, dtype=dtype)
-    v /= v.norm()
-
-    Hv_hvp = hvp_simple(model, Xb, Yb, v)
-
-    Hv_fd = hvp_finite_difference(
-        model, Xb, Yb, v, eps=eps
-    )
-
-    rel_err = torch.norm(Hv_hvp - Hv_fd) / (torch.norm(Hv_fd) + 1e-12)
-
-    if rel_err > 1e-1:
-        print("========== HVP SANITY CHECK ==========")
-        print("||Hv_pearl|| =", Hv_hvp.norm().item())
-        print("||Hv_fd||    =", Hv_fd.norm().item())
-        print("High FD error:", rel_err.item())
-        print("=======================================\n")
-
-    return rel_err.item()
-
-
 # ============================================================
-# 6. Lyapunov exponent at frozen solution
+#  Lyapunov exponent at frozen solution
 # ============================================================
 
 def compute_lyapunov_at_solution(model,
@@ -539,32 +547,31 @@ def compute_lyapunov_at_solution(model,
         plt.figure(figsize=(7, 6))
         for i in range(k):
             plt.plot(arr[:, i], label=fr"$\lambda_{{{i+1}}}$")
-        plt.xlabel(r"Time ($T \,*\, \eta$)")
+        plt.xlabel(r"Time (SGD steps $*\, \eta$)")
         plt.ylabel(r"Local $\lambda_k$")
         plt.title("Local exponents")
         plt.grid(True, alpha=0.3)
         plt.legend()
-        fname_lyap = f"lyapunov_seed_{seed}_lr_{lr}.png"
+        fname_lyap = f"figures/Study_A/LE/lyapunov_seed_{seed}_lr_{lr}.png"
         plt.tight_layout()
         plt.savefig(fname_lyap, dpi=200)
         plt.close()
 
-    if dns and DNS_traj is not None and len(DNS_traj) > 0:
-        dns_arr = np.array(DNS_traj)
-
-        plt.figure(figsize=(8, 6))
-        plt.plot(dns_arr, color="black", linestyle="--", linewidth=2.4)
-
-        plt.xlabel("Renormalization Index")
-        plt.ylabel(r"DNS $\lambda_{\max}$")
-        plt.title(fr"DNS Lyapunov Exponent (lr={lr}, seed={seed})")
-        plt.grid(True, alpha=0.3)
-
-        fname_dns = f"DNS_lyapunov_seed_{seed}_lr_{lr}.png"
-        plt.tight_layout()
-        plt.savefig(fname_dns, dpi=200)
-        plt.close()
-    # Return largest LE + full trajectory of 'k' local exponents
+    # if dns and DNS_traj is not None and len(DNS_traj) > 0:
+    #     dns_arr = np.array(DNS_traj)
+    #
+    #     plt.figure(figsize=(8, 6))
+    #     plt.plot(dns_arr, color="black", linestyle="--", linewidth=2.4)
+    #
+    #     plt.xlabel(r"Time (SGD steps $*\, \eta$)")
+    #     plt.ylabel(r"DNS $\lambda_{\max}$")
+    #     plt.title(fr"DNS Lyapunov Exponent (lr={lr}, seed={seed})")
+    #     plt.grid(True, alpha=0.3)
+    #
+    #     fname_dns = f"DNS_lyapunov_seed_{seed}_lr_{lr}.png"
+    #     plt.tight_layout()
+    #     plt.savefig(fname_dns, dpi=200)
+    #     plt.close()
 
     if dns:
         return float(final_spectrum[0]), LSAll, DNS_final, np.array(DNS_traj)
@@ -573,7 +580,7 @@ def compute_lyapunov_at_solution(model,
 
 
 # ============================================================
-# 7. Single run wrapper: train + Lyapunov
+# Single run wrapper: train + Lyapunov
 # ============================================================
 
 def run_single_config(X_train, Y_train, X_test, Y_test,
@@ -614,8 +621,6 @@ def run_single_config(X_train, Y_train, X_test, Y_test,
 
 
     print("HVP-based λ_max:", lam_max)
-    print("DNS-based λ_max:", lam_max_dns)
-
     # Compute maximum eigenvalue of the Hessian using full training batch X_train
     sigma_max, _ =  power_iteration_hessian(model, X_train, Y_train, iters=100, tol=1e-6)  #maximum eigenvalue of Hessian
 
@@ -635,7 +640,7 @@ if __name__ == "__main__":
     #WIDTHS = [20] #20, 50, 100, 200 # width of the hidden layer
     width = 100 # width of the hidden layer 20 is best
     LRS    = [1e-3] #[1e-5,1e-4,1e-3,1e-2,5e-2] #5e-5, 1e-4, 3e-4 # fixed learning rates
-    RUNS_PER_CONFIG = 50 # number of runs
+    RUNS_PER_CONFIG = 100 # number of runs
 
     # Fixed dataset
     X, Y =  generate_data(seed=data_seed)
@@ -680,6 +685,6 @@ if __name__ == "__main__":
         results_np = {key: np.array([d[key] for d in results])
                       for key in results[0].keys()}
         # Save as NPZ
-        np.savez("results_random_weight_50seed.npz", **results_np)
+        np.savez("results_random_weight_100.npz", **results_np)
         print("Saved results to results_random_weight.npz")
 

@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.lines import Line2D
 
-
-
 plt.rcParams.update({
     "font.size": 16,           # base font size
     "axes.titlesize": 18,      # title size
@@ -17,7 +15,7 @@ plt.rcParams.update({
 })
 
 # Change the data_path to point to the .npz file on your computer.
-data_path =    "/home/sharma/Projects/DDAT/Lyap_Exp/results_random_weight_50seed.npz" #"/home/sharma/Projects/DDAT/Lyap_Exp/results_random_lr_20seed.npz" #
+data_path = "results_random_lr_20seed.npz"  # "/home/sharma/Projects/DDAT/Lyap_Exp/results_random_weight_50seed.npz" #
 data = np.load(data_path) #lr with random weights
 
 # Extract arrays
@@ -59,7 +57,7 @@ else:
 # --------------------------------------------------------
 
 if "_lr_" in data_path:
-    print("This dataset varies learning rate.")
+    print("This dataset was generated for different learning rate.")
     marker_map = {
         1e-5: "o",  # circle
         1e-4: "s",  # square
@@ -75,7 +73,7 @@ if "_lr_" in data_path:
         5e-2: "yellow"
     }
 elif "weight" in data_path:
-    print("This dataset uses random parameter initializations")
+    print("This dataset was generated for random parameter initializations")
     marker_map={1e-2: "s"}
     color_map={1e-2: "blue"}
 
@@ -187,7 +185,7 @@ plt.show()
 
 if "_lr_" in data_path:
 
-    #Plots for (a) test_loss vs learning rate  (b) lambda_max vs learning rate and (c)
+    #Plots for (a) test_loss vs learning rate  (b) lambda_max vs learning rate and (c) sigma_max vs learning rate
     # Unique LR values
     unique_lrs = np.unique(lrs)
 
@@ -208,7 +206,7 @@ if "_lr_" in data_path:
     ax[0].errorbar(unique_lrs, mean_test, yerr=std_test,
                    marker='o', color='red', capsize=4, linewidth=2)
     ax[0].set_xscale('log')
-    ax[0].set_title("(a) Test Loss vs Learning Rate", fontsize=14)
+    ax[0].set_title("(a) Test Loss ", fontsize=14)
     ax[0].set_xlabel(r"Learning rate ($\eta$)")
     ax[0].set_ylabel("test_loss")
     ax[0].grid(alpha=0.3)

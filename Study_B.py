@@ -9,9 +9,17 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import pandas as pd
+import os
+
+os.makedirs("figures/Study_B", exist_ok=True)
+
+# Create folders if they don't exist
+os.makedirs("figures/Study_B/LE", exist_ok=True)
+os.makedirs("figures/Study_B/trainloss", exist_ok=True)
+
 
 # ============================================================
-# 0. Device / dtype
+# Device / dtype
 # ============================================================
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -19,7 +27,7 @@ dtype = torch.float32   # change to float64 if you want more accuracy
 
 
 # ============================================================
-# 0.1 Helper function for computing \lambda_max through DNS
+# Helper function for computing \lambda_max through DNS
 # ============================================================
 # ============================================================
 
@@ -61,7 +69,7 @@ def sgd_step_in_place(model, xb, yb, lr, loss_fn):
     return float(loss.item())
 
 # ============================================================
-# 0.2 Flatten / unflatten helpers
+# Flatten / unflatten helpers
 # ============================================================
 def flatten_params(tensors):
     """Flatten list/tuple of tensors to a 1D vector."""
@@ -94,7 +102,7 @@ def get_param_list(model):
     return [p for p in model.parameters()]
 
 # ============================================================
-# 1. Dataset: fixed nonlinear teacher (same as before)
+#  Dataset: Boston Housing dataset
 # ============================================================
 
 def generate_data(seed=0,Nsub=None):
@@ -135,7 +143,7 @@ def generate_data(seed=0,Nsub=None):
     return X, Y
 
 # ============================================================
-# 5. HVP via autograd
+# HVP via autograd
 # ============================================================
 
 def hvp_simple(model, Xb, Yb, v_flat):
@@ -170,9 +178,42 @@ def hvp_simple(model, Xb, Yb, v_flat):
 
     return flatten_params(Hv)
 
+# ============================================================
+# Sanity Check of HVP against finite differences
+# ============================================================
+def hvp_finite_difference(model, Xb, Yb, v_flat, eps=1e-3):
+    """
+    Finite difference approximation of H v:
+        Hv ≈ (∇L(w+eps v) - ∇L(w-eps v)) / (2 eps)
+    """
+    params = list(model.parameters())
+    w0 = flatten_params(params).detach().clone()
+
+    # helper: set parameters
+    def set_flat_params(w_flat):
+        idx = 0
+        with torch.no_grad():
+            for p in params:
+                n = p.numel()
+                p.copy_(w_flat[idx:idx+n].view_as(p))
+                idx += n
+
+    # g(w + eps*v)
+    set_flat_params(w0 + eps * v_flat)
+    g_plus = grad_flat(model, Xb, Yb)
+
+    # g(w - eps*v)
+    set_flat_params(w0 - eps * v_flat)
+    g_minus = grad_flat(model, Xb, Yb)
+
+    # restore original weights
+    set_flat_params(w0)
+
+    return (g_plus - g_minus) / (2.0 * eps)
+
 
 # ============================================================
-# 5. Maximum eigenvalue of full-batch Hessian using power iteration
+# Maximum eigenvalue of full-batch Hessian using power iteration
 # ============================================================
 def power_iteration_hessian(model, Xb, Yb, iters=100, tol=1e-6):
     """
@@ -212,43 +253,10 @@ def power_iteration_hessian(model, Xb, Yb, iters=100, tol=1e-6):
     return lambda_new, v
 
 
-# ============================================================
-# Sanity Check of HVP against finite differences
-# ============================================================
-def hvp_finite_difference(model, Xb, Yb, v_flat, eps=1e-3):
-    """
-    Finite difference approximation of H v:
-        Hv ≈ (∇L(w+eps v) - ∇L(w-eps v)) / (2 eps)
-    """
-    params = list(model.parameters())
-    w0 = flatten_params(params).detach().clone()
-
-    # helper: set parameters
-    def set_flat_params(w_flat):
-        idx = 0
-        with torch.no_grad():
-            for p in params:
-                n = p.numel()
-                p.copy_(w_flat[idx:idx+n].view_as(p))
-                idx += n
-
-    # g(w + eps*v)
-    set_flat_params(w0 + eps * v_flat)
-    g_plus = grad_flat(model, Xb, Yb)
-
-    # g(w - eps*v)
-    set_flat_params(w0 - eps * v_flat)
-    g_minus = grad_flat(model, Xb, Yb)
-
-    # restore original weights
-    set_flat_params(w0)
-
-    return (g_plus - g_minus) / (2.0 * eps)
-
 
 
 # ============================================================
-# 2. 3 layered Multi Layered Perceptron with tanh() activation function
+#  3 layered Multi Layered Perceptron with tanh() activation function
 # ============================================================
 
 class MLP(nn.Module):
@@ -266,7 +274,7 @@ class MLP(nn.Module):
 
 
 # ============================================================
-# 4. Training to convergence function  (SGD)
+# Training to convergence function  (SGD)
 # ============================================================
 
 def train_to_convergence(model,
@@ -324,7 +332,7 @@ def train_to_convergence(model,
         plt.xlabel("Epochs")
         plt.ylabel("train_loss")
         plt.title("Training Loss convergence")
-        fname_train= f"train_seed_{seed}_lr_{lr}.png"
+        fname_train= f"figures/Study_B/trainloss/train_seed_{seed}_lr_{lr}.png"
         plt.savefig(fname_train, dpi=200)
         plt.close()
 
@@ -540,12 +548,12 @@ def compute_lyapunov_at_solution(model,
         plt.figure(figsize=(7, 6))
         for i in range(k):
             plt.plot(arr[:, i], label=fr"$\lambda_{{{i+1}}}$")
-        plt.xlabel(r"Time ($T \,*\, \eta$)")
+        plt.xlabel(r"Time (SGD steps $*\, \eta$)")
         plt.ylabel(r"Local $\lambda_k$")
         plt.title("Local exponents")
         plt.grid(True, alpha=0.3)
         plt.legend()
-        fname_lyap = f"lyapunov_seed_{seed}_lr_{lr}.png"
+        fname_lyap = f"figures/Study_B/LE/lyapunov_seed_{seed}_lr_{lr}.png"
         plt.tight_layout()
         plt.savefig(fname_lyap, dpi=200)
         plt.close()
@@ -556,71 +564,71 @@ def compute_lyapunov_at_solution(model,
 
         plt.figure(figsize=(7, 5))
         plt.plot(lam_max_traj, linewidth=2.3, color="darkred")
-        plt.xlabel(r"Time ($T \,*\, \eta$)")
+        plt.xlabel(r"Time (SGD steps $*\, \eta$)")
         plt.ylabel(r"Local $\lambda_{\max}$")
         plt.title("Largest Lyapunov Exponent (HVP-based)")
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        fname_lyap_max = f"lyapunov_max_seed_{seed}_lr_{lr}.png"
+        fname_lyap_max = f"figures/Study_B/LE/lyapunov_max_seed_{seed}_lr_{lr}.png"
         plt.savefig(fname_lyap_max, dpi=200)
         plt.close()
 
 
-    if dns and DNS_traj is not None and len(DNS_traj) > 0:
-        dns_arr = np.array(DNS_traj)
-
-        plt.figure(figsize=(8, 6))
-        plt.plot(dns_arr, color="black", linestyle="--", linewidth=2.4)
-
-        plt.xlabel(r"Time ($T \,*\, \eta$)")
-        plt.ylabel(r"DNS $\lambda_{\max}$")
-        plt.title(fr"DNS Lyapunov Exponent (lr={lr}, seed={seed})")
-        plt.grid(True, alpha=0.3)
-
-        fname_dns = f"DNS_lyapunov_seed_{seed}_lr_{lr}.png"
-        plt.tight_layout()
-        plt.savefig(fname_dns, dpi=200)
-        plt.close()
-    # Return largest LE + full trajectory of 'k' local exponents
-
-    if spec_plot_max and len(LSAll) > 0:
-        arr = np.stack(LSAll, axis=0)  # (num_renorms, k)
-        lam_max_traj = arr[:, 0]  # HVP-based largest LE
-
-        plt.figure(figsize=(8, 6))
-
-        # --- HVP-based max LE ---
-        plt.plot(
-            lam_max_traj,
-            linewidth=2.3,
-            color="darkred",
-            label=r"HVP-based $\lambda_{\max}$"
-        )
-
-        # --- DNS max LE (if available) ---
-        if dns and DNS_traj is not None and len(DNS_traj) > 0:
-            dns_arr = np.array(DNS_traj)
-            plt.plot(
-                dns_arr,
-                linestyle="--",
-                linewidth=2.4,
-                color="black",
-                label=r"DNS $\lambda_{\max}$"
-            )
-
-        # --- Labels & formatting ---
-        plt.xlabel(r"Time ($T \,*\, \eta$)")
-        plt.ylabel(r"$\lambda_{\max}$")
-        plt.title(fr"Largest Lyapunov Exponent Comparison (lr={lr}, seed={seed})")
-        plt.grid(True, alpha=0.3)
-        plt.legend(fontsize=12)
-        plt.tight_layout()
-
-        # --- Save ---
-        fname_combined = f"Combined_LE_seed_{seed}_lr_{lr}.png"
-        plt.savefig(fname_combined, dpi=200)
-        plt.close()
+    # if dns and DNS_traj is not None and len(DNS_traj) > 0:
+    #     dns_arr = np.array(DNS_traj)
+    #
+    #     plt.figure(figsize=(8, 6))
+    #     plt.plot(dns_arr, color="black", linestyle="--", linewidth=2.4)
+    #
+    #     plt.xlabel(r"Time ($T \,*\, \eta$)")
+    #     plt.ylabel(r"DNS $\lambda_{\max}$")
+    #     plt.title(fr"DNS Lyapunov Exponent (lr={lr}, seed={seed})")
+    #     plt.grid(True, alpha=0.3)
+    #
+    #     fname_dns = f"DNS_lyapunov_seed_{seed}_lr_{lr}.png"
+    #     plt.tight_layout()
+    #     plt.savefig(fname_dns, dpi=200)
+    #     plt.close()
+    # # Return largest LE + full trajectory of 'k' local exponents
+    #
+    # if spec_plot_max and len(LSAll) > 0:
+    #     arr = np.stack(LSAll, axis=0)  # (num_renorms, k)
+    #     lam_max_traj = arr[:, 0]  # HVP-based largest LE
+    #
+    #     plt.figure(figsize=(8, 6))
+    #
+    #     # --- HVP-based max LE ---
+    #     plt.plot(
+    #         lam_max_traj,
+    #         linewidth=2.3,
+    #         color="darkred",
+    #         label=r"HVP-based $\lambda_{\max}$"
+    #     )
+    #
+    #     # --- DNS max LE (if available) ---
+    #     if dns and DNS_traj is not None and len(DNS_traj) > 0:
+    #         dns_arr = np.array(DNS_traj)
+    #         plt.plot(
+    #             dns_arr,
+    #             linestyle="--",
+    #             linewidth=2.4,
+    #             color="black",
+    #             label=r"DNS $\lambda_{\max}$"
+    #         )
+    #
+    #     # --- Labels & formatting ---
+    #     plt.xlabel(r"Time ($T \,*\, \eta$)")
+    #     plt.ylabel(r"$\lambda_{\max}$")
+    #     plt.title(fr"Largest Lyapunov Exponent Comparison (lr={lr}, seed={seed})")
+    #     plt.grid(True, alpha=0.3)
+    #     plt.legend(fontsize=12)
+    #     plt.tight_layout()
+    #
+    #     # --- Save ---
+    #     fname_combined = f"Combined_LE_seed_{seed}_lr_{lr}.png"
+    #     plt.savefig(fname_combined, dpi=200)
+    #     plt.close()
 
     if dns:
         return float(final_spectrum[0]), LSAll, DNS_final, np.array(DNS_traj)
@@ -669,7 +677,6 @@ def run_single_config(X_train, Y_train, X_test, Y_test,
     )
 
     print("HVP-based λ_max:", lam_max)
-    print("DNS-based λ_max:", lam_max_dns)
 
     # Compute maximum eigenvalue of the Hessian using full training batch X_train
     sigma_max, _ =  power_iteration_hessian(model, X_train, Y_train, iters=100, tol=1e-6)  #maximum eigenvalue of Hessian
@@ -687,7 +694,7 @@ if __name__ == "__main__":
     bs = 32         #batch size
     save_results  = True  #Save results to csv
 
-    width = 50 # width of the hidden layer 20 is best
+    width = 100 # width =50
     LRS    = [1e-5,1e-4,1e-3,1e-2,1e-1]
     RUNS_PER_CONFIG = 40 # number of runs
 
@@ -734,6 +741,6 @@ if __name__ == "__main__":
         results_np = {key: np.array([d[key] for d in results])
                       for key in results[0].keys()}
         # Save as NPZ
-        np.savez("results_random_lr_40seed.npz", **results_np)
+        np.savez("results_random_lr_40.npz", **results_np)
         print("Saved results to results_random_lr.npz")
 
